@@ -1,0 +1,41 @@
+---
+- name: Deploy Flask App using Docker
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: ['apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common']
+        state: present
+        update_cache: yes
+
+    - name: Add Docker GPG key
+      ansible.builtin.shell: |
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+
+    - name: Add Docker repository
+      ansible.builtin.shell: |
+        add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+        update_cache: yes
+
+    - name: Build Docker image
+      community.docker.docker_image:
+        name: flask-demo
+        build:
+          path: .
+        state: present
+
+    - name: Run Docker container
+      community.docker.docker_container:
+        name: flask-demo-container
+        image: flask-demo
+        state: started
+        restart_policy: always
+        published_ports:
+          - "5000:5000"
